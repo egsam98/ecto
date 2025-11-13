@@ -65,48 +65,37 @@ An error format is identical to *Atomic*.
 The principle of composite schemas boils down to calling nested sub-schemas with additional options, 
 while *Atomic* is a standalone schema and its mechanism is as follows:
 
-```plantuml
-@startuml
-start
+```mermaid
+flowchart TD
+    A([Start]) --> B[Run converter]
 
-- Run converter
-if (Converter failed?) then (true)
-    #red :error;
-    kill
-else (false)
-    if (Go-zero value?) then (true)
-        if (Required?) then (false)
-            #red :error;
-            kill
-        elseif (Has default?) then (true)
-            :Set default value;
-        endif
-    else (false)
-    endif
+    B -->|Converter failed?| C{Failed?}
+    C -->|Yes| D[Error]:::error --> E([End])
+    C -->|No| F{Go-zero value?}
 
-    - Initialize empty error list
+    F -->|Yes| G{Required?}
+    G -->|Yes| H{Has default?}
+    G -->|No| I[Error]:::error --> E
 
-    - i = 0
-    while (i < number of tests?) is (tue)
-        :Call test[i];
+    H -->|Yes| J[Set default value] --> K[Initialize empty error list]
+    H -->|No| K
 
-        if (Test failed?) then (true)
-            :Append error to list;
-        else (false)
-        endif
+    F -->|No| K
 
-        backward :i += 1;
-    endwhile (false)
+    K --> L[i = 0]
 
-    if (Length of error list > 0?) then (true)
-        #red :error;
-        kill
-    else (false)
-        stop
-    endif
-endif
+    L --> M{i < number of tests?}
+    M -->|Yes| N["Call test[i]"]
+    
+    N --> O{Test failed?}
+    O -->|Yes| P[Append error to list] --> Q[i += 1] --> M
+    O -->|No| Q --> M
 
-@enduml
+    M -->|No| R{Length of error list > 0?}
+    R -->|Yes| S[Error]:::error --> E
+    R -->|No| T([Stop])
+
+    classDef error fill:#ff0000;
 ```
 
 ## Tests
