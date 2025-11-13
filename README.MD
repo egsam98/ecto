@@ -22,7 +22,7 @@ of a subject, which may be either true or false. Returns `true` /
 
 ### Atomic
 Intended for describing scalar Go types or types that do not require
-recursive/internal processing (integers, booleans, strings, etc.).\ 
+recursive/internal processing (integers, booleans, strings, etc.). \
 Error format: 
 
 ```json
@@ -65,7 +65,7 @@ An error format is identical to *Atomic*.
 The principle of composite schemas boils down to calling nested sub-schemas with additional options, 
 while *Atomic* is a standalone schema and its mechanism is as follows:
 
-<!-- ![PlantUML](./atomic_schema.puml) -->
+<!--![Diagram Image Link](./atomic_schema.puml)-->
 
 ## Tests
 
