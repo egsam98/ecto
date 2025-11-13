@@ -65,7 +65,49 @@ An error format is identical to *Atomic*.
 The principle of composite schemas boils down to calling nested sub-schemas with additional options, 
 while *Atomic* is a standalone schema and its mechanism is as follows:
 
-<!--![Diagram Image Link](./atomic_schema.puml)-->
+```plantuml
+@startuml
+start
+
+- Run converter
+if (Converter failed?) then (true)
+    #red :error;
+    kill
+else (false)
+    if (Go-zero value?) then (true)
+        if (Required?) then (false)
+            #red :error;
+            kill
+        elseif (Has default?) then (true)
+            :Set default value;
+        endif
+    else (false)
+    endif
+
+    - Initialize empty error list
+
+    - i = 0
+    while (i < number of tests?) is (tue)
+        :Call test[i];
+
+        if (Test failed?) then (true)
+            :Append error to list;
+        else (false)
+        endif
+
+        backward :i += 1;
+    endwhile (false)
+
+    if (Length of error list > 0?) then (true)
+        #red :error;
+        kill
+    else (false)
+        stop
+    endif
+endif
+
+@enduml
+```
 
 ## Tests
 
