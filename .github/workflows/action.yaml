@@ -1,8 +1,5 @@
-name: Default
-on: push
 jobs:
   embed-puml-markdown:
-    runs-on: ubuntu-slim
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
