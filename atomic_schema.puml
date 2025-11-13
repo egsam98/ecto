@@ -1,0 +1,41 @@
+@startuml
+start
+
+- Вызов конвертора
+if (Конвертор завершился ошибкой) then (да)
+    #red :ошибка;
+    kill
+else (нет)
+    if (Значение нулевое) then (да)
+        if (Настроен Required) then (да)
+            #red :ошибка;
+            kill
+        elseif (Настроен Default) then (да)
+            :Заполнить значением по умолч.;
+        endif
+    else (нет)
+    endif
+
+    - Инициализация пустого списка ошибок
+
+    - i = 0
+    while (i < кол-во тестов) is (да)
+        :Вызов i-ого теста;
+
+        if (Тест завершился ошибкой) then (да)
+            :Добавить ошибку в список;
+        else (нет)
+        endif
+
+        backward :i += 1;
+    endwhile (нет)
+
+    if (Список ошибок > 0) then (да)
+        #red :ошибка;
+        kill
+    else (нет)
+        stop
+    endif
+endif
+
+@enduml
