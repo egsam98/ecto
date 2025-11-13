@@ -1,39 +1,39 @@
 @startuml
 start
 
-- Вызов конвертора
-if (Конвертор завершился ошибкой) then (да)
-    #red :ошибка;
+- Run converter
+if (Converter failed?) then (true)
+    #red :error;
     kill
-else (нет)
-    if (Значение нулевое) then (да)
-        if (Настроен Required) then (да)
-            #red :ошибка;
+else (false)
+    if (Go-zero value?) then (true)
+        if (Required?) then (false)
+            #red :error;
             kill
-        elseif (Настроен Default) then (да)
-            :Заполнить значением по умолч.;
+        elseif (Has default?) then (true)
+            :Set default value;
         endif
-    else (нет)
+    else (false)
     endif
 
-    - Инициализация пустого списка ошибок
+    - Initialize empty error list
 
     - i = 0
-    while (i < кол-во тестов) is (да)
-        :Вызов i-ого теста;
+    while (i < number of tests?) is (tue)
+        :Call test[i];
 
-        if (Тест завершился ошибкой) then (да)
-            :Добавить ошибку в список;
-        else (нет)
+        if (Test failed?) then (true)
+            :Append error to list;
+        else (false)
         endif
 
         backward :i += 1;
-    endwhile (нет)
+    endwhile (false)
 
-    if (Список ошибок > 0) then (да)
-        #red :ошибка;
+    if (Length of error list > 0?) then (true)
+        #red :error;
         kill
-    else (нет)
+    else (false)
         stop
     endif
 endif
