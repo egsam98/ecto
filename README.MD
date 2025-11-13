@@ -1,5 +1,5 @@
 # Ecto
-**Library for deserialization and validation of input data**
+Library for deserialization and validation of input data**
 
 ## Basic definitions
 
@@ -65,7 +65,7 @@ An error format is identical to *Atomic*.
 The principle of composite schemas boils down to calling nested sub-schemas with additional options, 
 while *Atomic* is a standalone schema and its mechanism is as follows:
 
-![PlantUML](https://www.plantuml.com/plantuml/uml/5Son3G8n30NGdYbWWRW5gji46STS8iN9oVuMwyDLhtjRW1rfutBhKqPMJH_N1Xpn97B-bhsZvJj3NTQ4JXHPHhe7s-DEAbZa-WbgoZN8EA1EZ6LTNY5DZSjn_flE-lS7)
+![PlantUML](https://www.plantuml.com/plantuml/png/5Son3G8n30NGdYbWWRW5gji46STS8iN9oVuMwyDLhtjRW1rfutBhKqPMJH_N1Xpn97B-bhsZvJj3NTQ4JXHPHhe7s-DEAbZa-WbgoZN8EA1EZ6LTNY5DZSjn_flE-lS7)
 
 ## Tests
 
