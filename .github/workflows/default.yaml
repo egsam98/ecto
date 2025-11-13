@@ -1,0 +1,12 @@
+name: Default
+on: push
+jobs:
+  embed-puml-markdown:
+    runs-on: ubuntu-slim
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Embed PlantUML inside Markdown
+        uses: alessandro-marcantoni/puml-markdown@v0.1.1
