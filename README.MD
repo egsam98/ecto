@@ -66,16 +66,16 @@ The principle of composite schemas boils down to calling nested sub-schemas with
 while *Atomic* is a standalone schema and its mechanism is as follows:
 
 ```mermaid
-flowchart TD
+flowchart LR
     A([Start]) --> B[Run converter]
 
-    B -->|Converter failed?| C{Failed?}
-    C -->|Yes| D[Error]:::error --> E([End])
+    B --> C{Converter failed?}
+    C -->|Yes| D([Error]):::error
     C -->|No| F{Go-zero value?}
 
     F -->|Yes| G{Required?}
-    G -->|Yes| H{Has default?}
-    G -->|No| I[Error]:::error --> E
+    G -->|No| H{Has default?}
+    G -->|Yes| D
 
     H -->|Yes| J[Set default value] --> K[Initialize empty error list]
     H -->|No| K
@@ -92,7 +92,7 @@ flowchart TD
     O -->|No| Q --> M
 
     M -->|No| R{Length of error list > 0?}
-    R -->|Yes| S[Error]:::error --> E
+    R -->|Yes| D
     R -->|No| T([Stop])
 
     classDef error fill:#ff0000;
