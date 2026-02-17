@@ -1,10 +1,12 @@
 package str
 
 import (
+	"encoding/base64"
 	"net"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	iso6391 "github.com/emvi/iso-639-1"
@@ -88,6 +90,26 @@ func Country() ecto.Test[string] {
 		Func: func(v *string) bool {
 			_, ok := country.ByAlpha2CodeStr(*v)
 			return ok
+		},
+	}
+}
+
+func Base64() ecto.Test[string] {
+	return ecto.Test[string]{
+		Error: "invalid base64",
+		Func: func(v *string) bool {
+			_, err := base64.StdEncoding.DecodeString(*v)
+			return err == nil
+		},
+	}
+}
+
+func DateTime(layout string) ecto.Test[string] {
+	return ecto.Test[string]{
+		Error: ecto.Error("datetime format must be " + layout),
+		Func: func(v *string) bool {
+			_, err := time.Parse(layout, *v)
+			return err == nil
 		},
 	}
 }

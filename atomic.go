@@ -11,6 +11,7 @@ import (
 )
 
 var _ Schema = (*AtomicSchema[any, any])(nil)
+var _ IAtomicOrPtrSchema = (*AtomicSchema[any, any])(nil)
 var typeStringer = reflect.TypeFor[fmt.Stringer]()
 var typeJsonNumber = reflect.TypeFor[json.Number]()
 
@@ -22,10 +23,10 @@ var typeJsonNumber = reflect.TypeFor[json.Number]()
 // - Set default if value is zero
 // - Set of Test predicates for validation
 type AtomicSchema[T comparable, R any] struct {
-	required     bool
-	defaultValue *T
-	convert      func(*T) (*R, error)
-	tests        []Test[R]
+	required, omitZero bool
+	defaultValue       *T
+	convert            func(*T) (*R, error)
+	tests              []Test[R]
 }
 
 func Atomic[T comparable]() AtomicSchema[T, T] {
@@ -103,6 +104,13 @@ func (s AtomicSchema[T, R]) Required() AtomicSchema[T, R] {
 	return s
 }
 
+// OmitZero
+// Deprecated: for optional parameters use PtrSchema, this method is for backward compatibility
+func (s AtomicSchema[T, R]) OmitZero() AtomicSchema[T, R] {
+	s.omitZero = true
+	return s
+}
+
 func (s AtomicSchema[T, R]) Default(value T) AtomicSchema[T, R] {
 	s.defaultValue = &value
 	return s
@@ -116,11 +124,16 @@ func (s AtomicSchema[T, R]) Test(tests ...Test[R]) AtomicSchema[T, R] {
 // Process may return ListError
 func (s AtomicSchema[T, R]) Process(data *T) error { return s.process(data) }
 
+func (AtomicSchema[T, R]) ForType() reflect.Type { return reflect.TypeFor[T]() }
+
 func (s AtomicSchema[T, R]) process(ptrAny any) error {
 	ptr := ptrAny.(*T)
 	if lo.IsEmpty(*ptr) {
 		if s.required {
 			return ListError{errRequired}
+		}
+		if s.omitZero {
+			return nil
 		}
 		if s.defaultValue != nil {
 			*ptr = *s.defaultValue
@@ -144,4 +157,10 @@ func (s AtomicSchema[T, R]) process(ptrAny any) error {
 	return nil
 }
 
-func (AtomicSchema[T, R]) forType() reflect.Type { return reflect.TypeFor[T]() }
+func (s AtomicSchema[T, R]) IsRequired() bool { return s.required || (!s.omitZero && len(s.tests) > 0) }
+
+func (s AtomicSchema[T, R]) WithRequired(value bool) IAtomicOrPtrSchema {
+	s.required = value
+	s.omitZero = !value
+	return s
+}

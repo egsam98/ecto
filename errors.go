@@ -15,10 +15,12 @@ func (e Error) Error() string { return string(e) }
 
 type ListError []Error
 
-func (e ListError) Error() string {
+func (e ListError) JSON() json.RawMessage {
 	b, _ := json.Marshal(e)
-	return string(b)
+	return b
 }
+
+func (e ListError) Error() string { return string(e.JSON()) }
 
 type MapError map[string]error
 
@@ -32,7 +34,9 @@ func (e *MapError) Add(key string, err error) {
 	(*e)[key] = err
 }
 
-func (e MapError) Error() string {
+func (e MapError) JSON() json.RawMessage {
 	b, _ := json.Marshal(e)
-	return string(b)
+	return b
 }
+
+func (e MapError) Error() string { return string(e.JSON()) }

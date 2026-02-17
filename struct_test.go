@@ -21,28 +21,28 @@ var structSchema = ecto.Struct[Data](ecto.M{
 	"C": ecto.Struct[C](map[string]ecto.Schema{
 		"C1": ecto.String().Required().Test(ectos.Min(1)),
 	}),
-	"D": ecto.Slice[*string](
+	"D": ecto.Slice[[]*string](
 		ecto.Ptr[string](ecto.String().Required().Test(ectos.URL())),
-	).Test(ectosl.Min[*string](2)),
+	).Test(ectosl.Min[[]*string](2)),
 	"E": ecto.Atomic[uuid.UUID]().Default(uuid.New()),
-	"F": ecto.Slice[F](
+	"F": ecto.Slice[[]F](
 		ecto.Struct[F](ecto.M{
 			"F1": ecto.String().Required(),
 		}),
-	).Test(ectosl.Min[F](1)),
+	).Test(ectosl.Min[[]F](1)),
 	"G": ecto.Ptr[int](ecto.Int().Required()).Required(),
 })
 
 type Hello string
 
 type Data struct {
-	A Hello  `validate:"required"`
-	B string `validate:"required"`
+	A Hello
+	B string
 	C C
-	D []*string `validate:"required,min=2,dive,omitnil,url"`
-	E uuid.UUID `validate:"required"`
-	F []F       `json:"f" validate:"min=1,dive"`
-	G *int      `validate:"omitnil,required"`
+	D []*string
+	E uuid.UUID
+	F []F `json:"f"`
+	G *int
 }
 
 type C struct {

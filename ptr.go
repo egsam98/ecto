@@ -7,6 +7,7 @@ import (
 )
 
 var _ Schema = (*PtrSchema[any])(nil)
+var _ IAtomicOrPtrSchema = (*PtrSchema[any])(nil)
 
 // PtrSchema wraps inner Schema assuming input data as pointer. Features:
 // - Mark a pointer as required (non-nil)
@@ -44,4 +45,11 @@ func (s PtrSchema[T]) process(ptrAny any) error {
 	return s.inner.process(ptr)
 }
 
-func (s PtrSchema[T]) forType() reflect.Type { return reflect.TypeFor[*T]() }
+func (s PtrSchema[T]) ForType() reflect.Type { return reflect.TypeFor[*T]() }
+
+func (s PtrSchema[T]) IsRequired() bool { return s.required }
+
+func (s PtrSchema[To]) WithRequired(value bool) IAtomicOrPtrSchema {
+	s.required = value
+	return s
+}

@@ -2,6 +2,7 @@ package ecto
 
 import (
 	"cmp"
+	"encoding/json"
 	"reflect"
 	"strings"
 
@@ -10,17 +11,17 @@ import (
 )
 
 var _ Schema = (*StructSchema[any])(nil)
+var _ IStructSchema = (*StructSchema[any])(nil)
 
 // StructSchema represents schema for struct types via hashmap as a struct field to its schema
 type StructSchema[T any] struct {
-	Fields M
-	typ    reflect.Type
-	meta   map[string]fieldMeta
+	fields M
+	meta   map[string]FieldMeta
 }
 
-type fieldMeta struct {
-	index int
-	tag   string
+type FieldMeta struct {
+	Index int
+	Tag   string
 }
 
 type M = map[string]Schema
@@ -31,26 +32,8 @@ func Struct[T any](fields M) StructSchema[T] {
 		panic(errors.Errorf("%s: not a struct", typ))
 	}
 
-	meta := make(map[string]fieldMeta)
-	for i := range typ.NumField() {
-		field := typ.Field(i)
-		tag, _, _ := strings.Cut(field.Tag.Get("json"), ",")
-		meta[field.Name] = fieldMeta{
-			index: i,
-			tag:   cmp.Or(tag, field.Name),
-		}
-	}
-	self := StructSchema[T]{Fields: fields, typ: typ, meta: meta}
-
-	for key, schema := range fields {
-		field, ok := typ.FieldByName(key)
-		if !ok {
-			self.panicMissingKey(key)
-		}
-		if err := validateSchema(field.Type, schema); err != nil {
-			panic(errors.Wrapf(err, "%T: %s", self, key))
-		}
-	}
+	self := StructSchema[T]{fields: fields}
+	self.makeMeta()
 	return self
 }
 
@@ -71,33 +54,43 @@ func (s StructSchema[T]) Cast(src []byte, deserialize func([]byte, any) error, o
 		}
 	}
 	if cfg.scrub {
-		scrub(reflect.ValueOf(&data))
+		ScrubAny(&data)
 	}
 
 	return data, s.Process(&data)
 }
 
-// Extend existing schema
-func (s StructSchema[T]) Extend(fields M) StructSchema[T] {
-	return Struct[T](lo.Assign(s.Fields, fields))
+func (s StructSchema[T]) CastJSON(src []byte, opts ...CastOpt) (T, error) {
+	return s.Cast(src, json.Unmarshal, opts...)
 }
 
+func (s StructSchema[T]) CastToAny(src []byte, deserialize func([]byte, any) error, opts ...CastOpt) (any, error) {
+	return s.Cast(src, deserialize, opts...)
+}
+
+// Extend existing schema
+func (s StructSchema[T]) Extend(fields M) StructSchema[T] {
+	return Struct[T](lo.Assign(s.fields, fields))
+}
+
+func (s StructSchema[T]) ForType() reflect.Type { return reflect.TypeFor[T]() }
+
 func (s StructSchema[T]) process(ptrStruct any) error {
-	rv := reflect.ValueOf(ptrStruct).Elem()
-	if rv.Type() != s.typ {
-		panic(errors.Errorf("expected type %s to process, got: %s", s.typ, rv.Type()))
+	if len(s.fields) == 0 {
+		return nil
 	}
 
+	rv := reflect.ValueOf(ptrStruct).Elem()
 	var errs MapError
-	for key, schema := range s.Fields {
+	for key, schema := range s.fields {
 		keyMeta, ok := s.meta[key]
 		if !ok {
 			s.panicMissingKey(key)
 		}
 
-		ptr := rv.Field(keyMeta.index).Addr().Interface()
+		ptr := rv.Field(keyMeta.Index).Addr().Interface()
 		if err := schema.process(ptr); err != nil {
-			errs.Add(keyMeta.tag, err)
+			errs.Add(keyMeta.Tag, err)
 		}
 	}
 
@@ -107,7 +100,41 @@ func (s StructSchema[T]) process(ptrStruct any) error {
 	return nil
 }
 
-func (s StructSchema[T]) forType() reflect.Type { return s.typ }
+func (s StructSchema[T]) Fields() M { return s.fields }
+
+func (s StructSchema[T]) WithFields(fields M) IStructSchema {
+	s.fields = fields
+	s.makeMeta()
+	return s
+}
+
+func (s StructSchema[T]) Meta() map[string]FieldMeta { return s.meta }
+
+func (s *StructSchema[T]) makeMeta() {
+	s.meta = make(map[string]FieldMeta)
+	if len(s.fields) == 0 {
+		return
+	}
+
+	typ := reflect.TypeFor[T]()
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		tag, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+		s.meta[field.Name] = FieldMeta{
+			Index: i,
+			Tag:   cmp.Or(tag, field.Name),
+		}
+	}
+	for key, schema := range s.fields {
+		field, ok := typ.FieldByName(key)
+		if !ok {
+			s.panicMissingKey(key)
+		}
+		if err := validateSchema(field.Type, schema); err != nil {
+			panic(errors.Wrapf(err, "%T: %s", s, key))
+		}
+	}
+}
 
 func (s StructSchema[T]) panicMissingKey(key string) {
 	panic(errors.Errorf("%T: Missing struct schema key: %s", s, key))
@@ -122,44 +149,4 @@ func Scrub() CastOpt {
 
 type castConfig struct {
 	scrub bool
-}
-
-func scrub(rv reflect.Value) {
-	switch rv.Kind() {
-	case reflect.Ptr:
-		rvElem := rv.Elem()
-		if rvElem.Kind() == reflect.String && rvElem.IsZero() {
-			if rv.CanSet() {
-				rv.SetZero()
-			}
-			return
-		}
-		scrub(rvElem)
-	case reflect.Struct:
-		for i := range rv.NumField() {
-			scrub(rv.Field(i))
-		}
-	case reflect.Array, reflect.Slice:
-		for i := range rv.Len() {
-			scrub(rv.Index(i))
-		}
-	case reflect.Map:
-		it := rv.MapRange()
-		for it.Next() {
-			v := it.Value()
-
-			var vElem reflect.Value
-			if v.Kind() == reflect.Ptr {
-				vElem = v.Elem()
-			}
-
-			// Cannot continue via recursion 'cause map values aren't addressable
-			if vElem.Kind() == reflect.String && vElem.IsZero() {
-				rv.SetMapIndex(it.Key(), reflect.Zero(v.Type()))
-				continue
-			}
-			scrub(vElem)
-		}
-	default:
-	}
 }

@@ -7,18 +7,19 @@ import (
 	"github.com/egsam98/errors"
 )
 
-var _ Schema = (*SliceSchema[any])(nil)
+var _ Schema = (*SliceSchema[[]any, any])(nil)
+var _ ISliceSchema = (*SliceSchema[[]any, any])(nil)
 
 // SliceSchema wraps inner Schema assuming input data as slice. Features:
 // - Run slice-specific tests (see ecto/slices subpackage)
 // - Process internal schema
-type SliceSchema[T any] struct {
+type SliceSchema[S ~[]T, T any] struct {
 	inner Schema
-	tests []Test[[]T]
+	tests []Test[S]
 }
 
-func Slice[T any](inner Schema) SliceSchema[T] {
-	self := SliceSchema[T]{inner: inner}
+func Slice[S ~[]T, T any](inner Schema) SliceSchema[S, T] {
+	self := SliceSchema[S, T]{inner: inner}
 
 	if err := validateSchema(reflect.TypeFor[T](), inner); err != nil {
 		panic(errors.Wrapf(err, "%T", self))
@@ -26,17 +27,17 @@ func Slice[T any](inner Schema) SliceSchema[T] {
 	return self
 }
 
-func (s SliceSchema[T]) Test(tests ...Test[[]T]) SliceSchema[T] {
+func (s SliceSchema[S, T]) Test(tests ...Test[S]) SliceSchema[S, T] {
 	s.tests = tests
 	return s
 }
 
 // Process may return ListError (for list tests) or MapError for individual element errors.
 // Map key is a stringified slice index
-func (s SliceSchema[T]) Process(data []T) error { return s.process(&data) }
+func (s SliceSchema[S, T]) Process(data []T) error { return s.process(&data) }
 
-func (s SliceSchema[T]) process(ptrAny any) error {
-	ptr := ptrAny.(*[]T)
+func (s SliceSchema[S, T]) process(ptrAny any) error {
+	ptr := ptrAny.(*S)
 
 	var errs ListError
 	for _, test := range s.tests {
@@ -60,4 +61,11 @@ func (s SliceSchema[T]) process(ptrAny any) error {
 	return nil
 }
 
-func (SliceSchema[T]) forType() reflect.Type { return reflect.TypeFor[[]T]() }
+func (SliceSchema[S, T]) ForType() reflect.Type { return reflect.TypeFor[S]() }
+
+func (s SliceSchema[S, T]) Inner() Schema { return s.inner }
+
+func (s SliceSchema[S, T]) WithInner(inner Schema) ISliceSchema {
+	s.inner = inner
+	return s
+}
