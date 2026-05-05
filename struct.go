@@ -46,20 +46,25 @@ func (s StructSchema[T]) Cast(src []byte, deserialize func([]byte, any) error, o
 	if err := deserialize(src, &data); err != nil {
 		return data, errors.Wrapf(err, "deserialize %s into %T", src, data)
 	}
-
-	var cfg castConfig
-	for _, opt := range opts {
-		if opt != nil {
-			opt(&cfg)
-		}
-	}
-	if cfg.scrub {
-		ScrubAny(&data)
-	}
-
+	applyCastOpts(&data, opts...)
 	return data, s.Process(&data)
 }
 
+type Decoder interface {
+	Decode(any) error
+}
+
+// Decode decoding into T from external Decoder and runs Process
+func (s StructSchema[T]) Decode(dec Decoder, opts ...CastOpt) (T, error) {
+	var data T
+	if err := dec.Decode(&data); err != nil {
+		return data, errors.Wrapf(err, "decode into %T", data)
+	}
+	applyCastOpts(&data, opts...)
+	return data, s.Process(&data)
+}
+
+// CastJSON is shorthand for Cast with json.Unmarshal deserializer
 func (s StructSchema[T]) CastJSON(src []byte, opts ...CastOpt) (T, error) {
 	return s.Cast(src, json.Unmarshal, opts...)
 }
@@ -102,6 +107,7 @@ func (s StructSchema[T]) process(ptrStruct any) error {
 
 func (s StructSchema[T]) Fields() M { return s.fields }
 
+// WithFields overwrites existing schema fields
 func (s StructSchema[T]) WithFields(fields M) IStructSchema {
 	s.fields = fields
 	s.makeMeta()
@@ -149,4 +155,16 @@ func Scrub() CastOpt {
 
 type castConfig struct {
 	scrub bool
+}
+
+func applyCastOpts[T any](data *T, opts ...CastOpt) {
+	var cfg castConfig
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&cfg)
+		}
+	}
+	if cfg.scrub {
+		ScrubAny(data)
+	}
 }

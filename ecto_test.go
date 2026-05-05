@@ -3,7 +3,6 @@ package ecto
 import (
 	"testing"
 
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +13,7 @@ func TestScrubString(t *testing.T) {
 	}
 
 	for _, tc := range []testCase{
-		{lo.ToPtr("test"), lo.ToPtr("test")},
+		{new("test"), new("test")},
 		{new(string), nil},
 		{nil, nil},
 	} {

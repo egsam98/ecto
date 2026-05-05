@@ -33,6 +33,11 @@ type IStructSchema interface {
 	Meta() map[string]FieldMeta
 }
 
+type IMapSchema interface {
+	Schema
+	implIMapSchema()
+}
+
 // Test holds predicate function to apply on validated data and returns Error in case of failure
 type Test[T any] struct {
 	Error Error

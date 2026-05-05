@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/egsam98/ecto"
@@ -18,8 +17,8 @@ func TestPtr(t *testing.T) {
 func TestPtr_Process(t *testing.T) {
 	schema := ecto.Ptr[int](ecto.Int().Required())
 	assert.NoError(t, schema.Process(nil))
-	assert.NoError(t, schema.Process(lo.ToPtr(1)))
-	assert.EqualError(t, schema.Process(lo.ToPtr(0)), `["required"]`)
+	assert.NoError(t, schema.Process(new(1)))
+	assert.EqualError(t, schema.Process(new(0)), `["required"]`)
 
 	t.Run("required", func(t *testing.T) {
 		schema := ecto.Ptr[int](ecto.Int()).Required()

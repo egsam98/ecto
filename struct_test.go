@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -59,10 +58,10 @@ var data = Data{
 	C: struct {
 		C1 string `validate:"required"`
 	}{C1: "c1"},
-	D: []*string{lo.ToPtr("http://wikipedia.org"), lo.ToPtr("http://wikipedia.org")},
+	D: []*string{new("http://wikipedia.org"), new("http://wikipedia.org")},
 	E: uuid.New(),
 	F: []F{{F1: "f1"}},
-	G: lo.ToPtr(-1),
+	G: new(-1),
 }
 
 func TestStruct(t *testing.T) {

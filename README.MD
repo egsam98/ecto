@@ -51,9 +51,19 @@ Error format:
 A composite schema that applies a selected subschema to each element of
 an array/list.\
 Error format:
-
 ``` json
-{"0": ["error"], "2": ["error"]}
+["error1", "error2"] // general errors
+```
+or
+``` json
+{"0": ["error"], "2": ["error"]} // per slice element
+```
+
+### Map
+A composite schema that supports general tests. At the moment there's no subschema support for keys/values.\
+Error format:
+```json
+["error1", "error2"]
 ```
 
 ### Optional Schema

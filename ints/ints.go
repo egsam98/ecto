@@ -1,4 +1,4 @@
-package integer
+package ints
 
 import (
 	"github.com/egsam98/ecto"

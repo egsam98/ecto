@@ -42,7 +42,7 @@ func Int() AtomicSchema[int, int] { return Atomic[int]() }
 
 // IntFrom shorthand with conversion
 func IntFrom[T constraints.Integer]() AtomicSchema[T, int] {
-	return AtomicFrom[T, int](func(t *T) (*int, error) { return lo.ToPtr(int(*t)), nil })
+	return AtomicFrom[T, int](func(t *T) (*int, error) { return new(int(*t)), nil })
 }
 
 // String shorthand
@@ -56,11 +56,11 @@ func StringFrom[T comparable]() AtomicSchema[T, string] {
 	switch rt := reflect.TypeFor[T](); {
 	case rt.Implements(typeStringer):
 		convert = func(v *T) (*string, error) {
-			return lo.ToPtr(any(*v).(fmt.Stringer).String()), nil
+			return new(any(*v).(fmt.Stringer).String()), nil
 		}
 	case rt.Kind() == reflect.String:
 		convert = func(v *T) (*string, error) {
-			return lo.ToPtr(reflect.ValueOf(*v).String()), nil
+			return new(reflect.ValueOf(*v).String()), nil
 		}
 	default:
 		panic(errors.Errorf("%s is neither string nor %s", rt, typeStringer))
@@ -82,7 +82,7 @@ func FloatFrom[T comparable]() AtomicSchema[T, float64] {
 	switch kind := rt.Kind(); {
 	case kind == reflect.Float32 || kind == reflect.Float64:
 		convert = func(v *T) (*float64, error) {
-			return lo.ToPtr(reflect.ValueOf(*v).Float()), nil
+			return new(reflect.ValueOf(*v).Float()), nil
 		}
 	case rt == typeJsonNumber:
 		convert = func(t *T) (*float64, error) {
