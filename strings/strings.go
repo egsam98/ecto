@@ -5,19 +5,15 @@ import (
 	"net"
 	"net/url"
 	"regexp"
-	"strings"
 	"time"
 	"unicode/utf8"
 
 	iso6391 "github.com/emvi/iso-639-1"
 	country "github.com/mikekonan/go-countries"
-	"github.com/samber/lo"
 	"golang.org/x/text/currency"
 
 	"github.com/egsam98/ecto"
 )
-
-var urlSchemes = lo.Keyify([]string{"http", "https", "ftp", "tcp", "udp", "ws", "wss"})
 
 // Min restricts string length with a lower inclusive bound
 func Min(length uint) ecto.Test[string] {
@@ -47,11 +43,8 @@ func URL() ecto.Test[string] {
 	return ecto.Test[string]{
 		Error: "invalid URL",
 		Func: func(v *string) bool {
-			if strings.Count(*v, "//") > 1 || strings.Count(*v, "///") > 0 {
-				return false
-			}
-			uri, err := url.Parse(*v)
-			return err == nil && lo.HasKey(urlSchemes, uri.Scheme) && uri.Host != ""
+			uri, err := url.ParseRequestURI(*v)
+			return err == nil && uri.Scheme != "" && uri.Host != ""
 		},
 	}
 }
