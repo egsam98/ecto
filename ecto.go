@@ -28,7 +28,7 @@ type ISliceSchema interface {
 type IStructSchema interface {
 	Schema
 	Fields() M
-	WithFields(M) IStructSchema
+	WithFields(fields M, tagName ...string) IStructSchema
 	CastToAny(src []byte, unmarshal func([]byte, any) error, opts ...CastOpt) (any, error)
 	Meta() map[string]FieldMeta
 }

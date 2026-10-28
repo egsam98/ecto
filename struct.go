@@ -26,14 +26,14 @@ type FieldMeta struct {
 
 type M = map[string]Schema
 
-func Struct[T any](fields M) StructSchema[T] {
+func Struct[T any](fields M, tagName ...string) StructSchema[T] {
 	typ := reflect.TypeFor[T]()
 	if typ.Kind() != reflect.Struct {
 		panic(errors.Errorf("%s: not a struct", typ))
 	}
 
 	self := StructSchema[T]{fields: fields}
-	self.makeMeta()
+	self.makeMeta(tagName...)
 	return self
 }
 
@@ -108,24 +108,25 @@ func (s StructSchema[T]) process(ptrStruct any) error {
 func (s StructSchema[T]) Fields() M { return s.fields }
 
 // WithFields overwrites existing schema fields
-func (s StructSchema[T]) WithFields(fields M) IStructSchema {
+func (s StructSchema[T]) WithFields(fields M, tagName ...string) IStructSchema {
 	s.fields = fields
-	s.makeMeta()
+	s.makeMeta(tagName...)
 	return s
 }
 
 func (s StructSchema[T]) Meta() map[string]FieldMeta { return s.meta }
 
-func (s *StructSchema[T]) makeMeta() {
+func (s *StructSchema[T]) makeMeta(tagName ...string) {
 	s.meta = make(map[string]FieldMeta)
 	if len(s.fields) == 0 {
 		return
 	}
 
+	_tagName := lo.FirstOr(tagName, "json")
 	typ := reflect.TypeFor[T]()
 	for i := range typ.NumField() {
 		field := typ.Field(i)
-		tag, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+		tag, _, _ := strings.Cut(field.Tag.Get(_tagName), ",")
 		s.meta[field.Name] = FieldMeta{
 			Index: i,
 			Tag:   cmp.Or(tag, field.Name),
