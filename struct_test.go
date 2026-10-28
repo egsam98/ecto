@@ -30,6 +30,7 @@ var structSchema = ecto.Struct[Data](ecto.M{
 		}),
 	).Test(ectosl.Min[[]F](1)),
 	"G": ecto.Ptr[int](ecto.Int().Required()).Required(),
+	"H": ecto.Int().Required(),
 })
 
 type Hello string
@@ -42,6 +43,7 @@ type Data struct {
 	E uuid.UUID
 	F []F `json:"f"`
 	G *int
+	Embed
 }
 
 type C struct {
@@ -50,6 +52,10 @@ type C struct {
 
 type F struct {
 	F1 string `json:"f1" validate:"required"`
+}
+
+type Embed struct {
+	H int `json:"h"`
 }
 
 var data = Data{
@@ -62,6 +68,7 @@ var data = Data{
 	E: uuid.New(),
 	F: []F{{F1: "f1"}},
 	G: new(-1),
+	H: 1,
 }
 
 func TestStruct(t *testing.T) {
@@ -78,6 +85,12 @@ func TestStructSchema_Process(t *testing.T) {
 		data := data
 		data.F = []F{}
 		assert.EqualError(t, structSchema.Process(&data), `{"f":["must contain at least 1 items"]}`)
+	})
+
+	t.Run("invalid H", func(t *testing.T) {
+		data := data
+		data.H = 0
+		assert.EqualError(t, structSchema.Process(&data), `{"h":["required"]}`)
 	})
 }
 

@@ -20,12 +20,13 @@ type StructSchema[T any] struct {
 }
 
 type FieldMeta struct {
-	Index int
+	Index []int
 	Tag   string
 }
 
 type M = map[string]Schema
 
+// Struct builds StructSchema from fields map with field names validation. Embedded structs are supported
 func Struct[T any](fields M, tagName ...string) StructSchema[T] {
 	typ := reflect.TypeFor[T]()
 	if typ.Kind() != reflect.Struct {
@@ -93,7 +94,7 @@ func (s StructSchema[T]) process(ptrStruct any) error {
 			s.panicMissingKey(key)
 		}
 
-		ptr := rv.Field(keyMeta.Index).Addr().Interface()
+		ptr := rv.FieldByIndex(keyMeta.Index).Addr().Interface()
 		if err := schema.process(ptr); err != nil {
 			errs.Add(keyMeta.Tag, err)
 		}
@@ -123,17 +124,20 @@ func (s *StructSchema[T]) makeMeta(tagName ...string) {
 	}
 
 	_tagName := lo.FirstOr(tagName, "json")
-	typ := reflect.TypeFor[T]()
-	for i := range typ.NumField() {
-		field := typ.Field(i)
+	rt := reflect.TypeFor[T]()
+	for _, field := range reflect.VisibleFields(rt) {
+		if field.Anonymous || !lo.HasKey(s.fields, field.Name) {
+			continue
+		}
 		tag, _, _ := strings.Cut(field.Tag.Get(_tagName), ",")
 		s.meta[field.Name] = FieldMeta{
-			Index: i,
+			Index: field.Index,
 			Tag:   cmp.Or(tag, field.Name),
 		}
 	}
+
 	for key, schema := range s.fields {
-		field, ok := typ.FieldByName(key)
+		field, ok := rt.FieldByName(key)
 		if !ok {
 			s.panicMissingKey(key)
 		}
